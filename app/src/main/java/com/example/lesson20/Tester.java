@@ -2,8 +2,8 @@ package com.example.lesson20;
 
 import android.util.Log;
 
-import com.example.lesson20.javaInterfaces.TesterAttribute;
-import com.example.lesson20.javaInterfaces.TesterMethod;
+import com.example.lesson20.javaAttribute.TesterAttribute;
+import com.example.lesson20.javaAttribute.TesterMethod;
 
 public class Tester {
     public Tester(String param) {

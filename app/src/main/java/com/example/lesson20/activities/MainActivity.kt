@@ -2,33 +2,23 @@ package com.example.lesson20.activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.util.PatternsCompat
 import androidx.core.view.isVisible
 import bolts.CancellationTokenSource
+import bolts.Task
 import com.example.lesson20.*
 import com.example.lesson20.databinding.ActivityMainBinding
-import com.example.lesson20.Tester
-import com.example.lesson20.javaInterfaces.TesterAttribute
-import com.example.lesson20.javaInterfaces.TesterMethod
 import com.example.lesson20.models.LoginResponseBody
-import com.example.lesson20.tasks.LoginRepository
+import com.example.lesson20.repositories.LoginRepository
+import com.example.lesson20.repositories.ReflectionRepository
 import com.example.lesson20.utils.getTextError
 import com.example.lesson20.utils.showToastError
-import java.lang.reflect.Method
+import java.lang.Exception
 
 class MainActivity : AppCompatActivity() {
     companion object {
         const val KEY_VISIBLE_ERROR = "KEY_VISIBLE_ERROR"
-
-        const val NAME_PUBLIC_METHOD = "doPublic"
-        const val NAME_PRIVATE_METHOD = "doPrivate"
-        const val NAME_PROTECTED_METHOD = "doProtected"
-
-        const val TEXT_ABOUT_CONSTRUCTORS = "---Info about constructors---"
-        const val TEXT_ABOUT_METHODS = "---Info about methods---"
-        const val TEXT_ABOUT_ATTRIBUTES = "---Info about attributes---"
     }
 
     private var bindingMain: ActivityMainBinding? = null
@@ -49,7 +39,7 @@ class MainActivity : AppCompatActivity() {
 
         setupListeners(bindingMain)
 
-        reflectionMethods()
+        ReflectionRepository().reflectionMethods()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -66,91 +56,6 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         bindingMain = null
         cancellationTokenSourceMain.cancel()
-    }
-
-    private fun reflectionMethods() {
-        val tester = Tester::class.java
-
-        callMethodDoPublic(tester)
-
-        callMethodDoProtected(tester)
-
-        callMethodDoPrivate(tester)
-
-        infoAboutConstructor(tester)
-
-        infoAboutAttributes(tester)
-
-        infoAboutMethods(tester)
-    }
-
-    private fun callMethodDoPublic(tester: Class<Tester>) {
-        val methodDoPublic: Method? = tester.methods.find { method ->
-            NAME_PUBLIC_METHOD == method.name
-        }
-
-        val objTester = Tester("method doPublic")
-        methodDoPublic?.invoke(objTester)
-    }
-
-    private fun callMethodDoProtected(tester: Class<Tester>) {
-        val methodDoProtected: Method? = tester.getDeclaredMethod(NAME_PROTECTED_METHOD)
-        methodDoProtected?.isAccessible = true
-
-        val objTester2 = Tester("method doProtected")
-        methodDoProtected?.invoke(objTester2)
-    }
-
-    private fun callMethodDoPrivate(tester: Class<Tester>) {
-        val methodDoPrivate: Method? = tester.getDeclaredMethod(NAME_PRIVATE_METHOD)
-        methodDoPrivate?.isAccessible = true
-
-        val objTester3 = Tester("method doPrivate")
-        methodDoPrivate?.invoke(objTester3)
-    }
-
-    private fun infoAboutConstructor(tester: Class<Tester>) {
-        val constructors = tester.constructors
-
-        Log.e("TAG_CONSTRUCTOR", TEXT_ABOUT_CONSTRUCTORS)
-        constructors.forEach { constructor ->
-            val paramTypes = constructor.parameterTypes
-
-            paramTypes.forEach { paramType ->
-                Log.e("TAG_CONSTRUCTOR", "Param: ${paramType.name}")
-            }
-        }
-    }
-
-    private fun infoAboutAttributes(tester: Class<Tester>) {
-        val fields = tester.declaredFields
-
-        Log.e("TAG_ATTRIBUTES", TEXT_ABOUT_ATTRIBUTES)
-        fields.forEach { field ->
-            Log.e("TAG_ATTRIBUTES", "Name: ${field.name}")
-            Log.e("TAG_ATTRIBUTES", "Type: ${field.type.name}")
-
-            if (field.isAnnotationPresent(TesterAttribute::class.java)) {
-                field.annotations.forEach { annotation ->
-                    Log.e("TAG_ATTRIBUTES", "Annotation: $annotation")
-                }
-            }
-        }
-    }
-
-    private fun infoAboutMethods(tester: Class<Tester>) {
-        val methods = tester.declaredMethods
-
-        Log.e("TAG_METHODS", TEXT_ABOUT_METHODS)
-        methods.forEach { method ->
-            Log.e("TAG_METHODS", "Name: ${method.name}")
-
-            if (method.isAnnotationPresent(TesterMethod::class.java)) {
-                method.annotations.forEach { annotation ->
-                    Log.e("TAG_METHODS", "Annotation: $annotation")
-                }
-            }
-        }
     }
 
     private fun checkVisibilityTextError(savedInstanceState: Bundle?) {
@@ -182,26 +87,30 @@ class MainActivity : AppCompatActivity() {
         if (email != null && password != null) {
             setVisibleProgressbar(true)
 
-            val loginRepository = loginRepository.startTask(email, password)
+            val loginRepository = loginRepository.getLogin(email, password)
 
-            loginRepository.task.continueWith {
+            loginRepository?.continueWith({
                 when {
                     it.result != null -> {
                         onReceiveResult(it.result)
                     }
                     it.error != null -> {
-                        setVisibleProgressbar(false)
-                        setVisibleTextError(false)
-                        showToastError(getTextError(it.error), this)
+                        onReceiveError(it.error)
                     }
                 }
-            }
+            }, Task.UI_THREAD_EXECUTOR, cancellationTokenSourceMain.token)
         }
     }
 
     private fun onReceiveResult(loginResponseBody: LoginResponseBody) {
         setVisibleProgressbar(false)
         checkServerResponse(loginResponseBody)
+    }
+
+    private fun onReceiveError(exception: Exception) {
+        setVisibleProgressbar(false)
+        setVisibleTextError(false)
+        showToastError(getTextError(exception), this)
     }
 
     private fun getValidEmail(): String? {

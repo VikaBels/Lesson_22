@@ -9,7 +9,7 @@ import com.example.lesson20.*
 import com.example.lesson20.databinding.ActivityProfileBinding
 import com.example.lesson20.App.Companion.getDateFormat
 import com.example.lesson20.models.ProfileResponseBody
-import com.example.lesson20.tasks.ProfileRepository
+import com.example.lesson20.repositories.ProfileRepository
 import com.example.lesson20.utils.getTextError
 import com.example.lesson20.utils.showToastError
 
@@ -107,9 +107,9 @@ class ProfileActivity : AppCompatActivity() {
         val token = this.token
 
         if (!token.isNullOrEmpty()) {
-            val profileRepository = profileRepository.startTask(token)
+            val profileRepository = profileRepository.getProfile(token)
 
-            profileRepository.task.continueWith {
+            profileRepository?.continueWith({
                 when {
                     it.result != null -> {
                         onReceiveResult(it.result)
@@ -119,7 +119,7 @@ class ProfileActivity : AppCompatActivity() {
                         setTextError(getTextError(it.error))
                     }
                 }
-            }
+            }, Task.UI_THREAD_EXECUTOR, cancellationTokenSourceProfile.token)
         } else {
             setVisibleProgressbar(false)
             setTextError(resources.getString(R.string.error_unexpected))

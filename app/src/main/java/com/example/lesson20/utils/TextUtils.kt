@@ -6,10 +6,10 @@ import java.lang.Exception
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
-fun getTextError(profileResponseBodyException: Exception): String? {
+fun getTextError(exception: Exception): String? {
     val resources = getInstanceApp().resources
 
-    val textError = when (profileResponseBodyException) {
+    val textError = when (exception) {
         is UnknownHostException -> {
             resources.getString(R.string.error_no_internet)
         }
@@ -17,7 +17,7 @@ fun getTextError(profileResponseBodyException: Exception): String? {
             resources.getString(R.string.error_problem_with_socket)
         }
         else -> {
-            profileResponseBodyException.message
+            exception.message
         }
     }
     return textError

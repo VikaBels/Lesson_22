@@ -1,6 +1,7 @@
-package com.example.lesson20.tasks
+package com.example.lesson20.repositories
 
 import android.util.Log
+import bolts.Task
 import bolts.TaskCompletionSource
 import com.example.lesson20.*
 import com.example.lesson20.interfaces.ProfileService
@@ -17,10 +18,10 @@ class ProfileRepository {
         const val PROFILE_URL = "senla-training-addition/lesson-21.php?method=profile"
     }
 
-    fun startTask(
+    fun getProfile(
         token: String
-    ): TaskCompletionSource<ProfileResponseBody> {
-        return sendRequestProfile(token)
+    ): Task<ProfileResponseBody>? {
+        return sendRequestProfile(token).task
     }
 
     private fun sendRequestProfile(token: String): TaskCompletionSource<ProfileResponseBody> {
@@ -34,7 +35,6 @@ class ProfileRepository {
         val requestBody = ProfileRequestBody(
             token = token
         )
-
         return getCompletable(serviceInstanceProfile, requestBody)
     }
 

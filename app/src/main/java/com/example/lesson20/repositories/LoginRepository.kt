@@ -1,6 +1,7 @@
-package com.example.lesson20.tasks
+package com.example.lesson20.repositories
 
 import android.util.Log
+import bolts.Task
 import bolts.TaskCompletionSource
 import com.example.lesson20.*
 import com.example.lesson20.interfaces.LoginService
@@ -17,11 +18,11 @@ class LoginRepository {
         const val LOGIN_URL = "senla-training-addition/lesson-21.php?method=login"
     }
 
-    fun startTask(
+    fun getLogin(
         email: String,
         password: String
-    ): TaskCompletionSource<LoginResponseBody> {
-        return startRequestLogin(email, password)
+    ): Task<LoginResponseBody>? {
+        return startRequestLogin(email, password).task
     }
 
     private fun startRequestLogin(
@@ -39,7 +40,6 @@ class LoginRepository {
             email = email,
             password = password
         )
-
         return getCompletable(serviceInstanceLogin, requestBody)
     }
 
